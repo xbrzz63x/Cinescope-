@@ -596,17 +596,14 @@ async function tmdbSearch(query){
         .map(r=>tmdbToMovie(r));
       personResults.push(...known);
       // Also fetch full credits if it looks like an actor search
-      if(persons.length === 1 || titleResults.length < 3){
-        try {
-          const credits = await tmdbFetch(`/person/${person.id}/combined_credits?language=fr-FR`);
-          const filmography = (credits.cast||[])
-            .filter(r=>(r.media_type==='movie'||r.media_type==='tv') && r.poster_path && r.vote_average > 5)
-            .sort((a,b)=>(b.popularity||0)-(a.popularity||0))
-            .slice(0,12)
-            .map(r=>tmdbToMovie(r));
-          personResults.push(...filmography);
-        } catch(e){}
-      }
+      try {
+        const credits = await tmdbFetch(`/person/${person.id}/combined_credits?language=fr-FR`);
+        const filmography = (credits.cast||[])
+          .filter(r=>(r.media_type==='movie'||r.media_type==='tv') && r.poster_path && r.vote_count > 10)
+          .sort((a,b)=>(b.popularity||0)-(a.popularity||0))
+          .map(r=>tmdbToMovie(r)); // no slice — toute la filmographie
+        personResults.push(...filmography);
+      } catch(e){}
     }
 
     // Merge: if actor found, prioritize their filmography
