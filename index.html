@@ -541,6 +541,7 @@ const state = {
   viewedIds:[],
   ratings:{}, // id -> 1-5 emotion score
   tmdbMode:true,
+  tmdbType:'all',
   tmdbMovies:[],
   tmdbCache:{},
   watchlistData:{},
@@ -635,17 +636,28 @@ function tmdbToMovie(r){
 // ── Fetch trending (home screen) ──
 async function loadTrending(){
   try {
-    const [movies, tv] = await Promise.all([
-      tmdbFetch('/trending/movie/week?language=fr-FR'),
-      tmdbFetch('/trending/tv/week?language=fr-FR'),
-    ]);
-    const combined = [
-      ...(movies.results||[]).slice(0,12).map(r=>({...r,media_type:'movie'})),
-      ...(tv.results||[]).slice(0,8).map(r=>({...r,media_type:'tv'})),
-    ].map(r=>tmdbToMovie(r));
-    state.tmdbMovies = combined;
-    renderTMDBCards(combined);
-  } catch(e){ renderCards(); } // fallback to local data
+    const t=state.tmdbType||'all';
+    let combined=[];
+    if(t==='movie'){
+      const d=await tmdbFetch('/trending/movie/week?language=fr-FR');
+      combined=(d.results||[]).slice(0,20).map(r=>({...r,media_type:'movie'}));
+    } else if(t==='tv'){
+      const d=await tmdbFetch('/trending/tv/week?language=fr-FR');
+      combined=(d.results||[]).slice(0,20).map(r=>({...r,media_type:'tv'}));
+    } else {
+      const [movies,tv]=await Promise.all([
+        tmdbFetch('/trending/movie/week?language=fr-FR'),
+        tmdbFetch('/trending/tv/week?language=fr-FR'),
+      ]);
+      combined=[
+        ...(movies.results||[]).slice(0,12).map(r=>({...r,media_type:'movie'})),
+        ...(tv.results||[]).slice(0,8).map(r=>({...r,media_type:'tv'})),
+      ];
+    }
+    const mapped=combined.map(r=>tmdbToMovie(r));
+    state.tmdbMovies=mapped;
+    renderTMDBCards(mapped);
+  } catch(e){ renderCards(); }
 }
 
 // ── Fetch detail for modal ──
@@ -669,8 +681,9 @@ async function loadByFilters(){
   };
   const genreIds = state.genres.map(g=>genreMap[g]).filter(Boolean).join(',');
   const decadeParam = state.decades.length ? decadeToYear(state.decades[0]) : '';
-  const isTV = state.type==='serie';
-  const isBoth = state.type==='all';
+  const tmdbType=state.tmdbType||'all';
+  const isTV = tmdbType==='tv';
+  const isBoth = tmdbType==='all';
 
   try {
     const endpoint = isTV ? '/discover/tv' : '/discover/movie';
@@ -1291,6 +1304,9 @@ document.querySelectorAll('.tab').forEach(t=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
     state.type=t.dataset.type;
+    // Map internal type to TMDB media_type
+    const typeMap={'film':'movie','serie':'tv','doc':'tv','all':'all'};
+    state.tmdbType=typeMap[t.dataset.type]||'all';
     state.tmdbMode=true;
     if(state.search) tmdbSearch(state.search);
     else if(state.genres.length||state.decades.length) loadByFilters();
@@ -1362,10 +1378,18 @@ document.getElementById('aiBtn').addEventListener('click', async ()=>{
       const year=(r.release_date||r.first_air_date||'').slice(0,4);
       const note=r.vote_average?`⭐ ${r.vote_average.toFixed(1)}`:'';
       const type=r.media_type==='tv'?'📺':'🎬';
-      return `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #ffffff08">
-        <strong style="color:var(--text)">${type} ${title}</strong>
-        <span style="color:var(--text3);font-size:12px"> ${year} ${note}</span><br>
-        <span style="font-size:12px;color:var(--text2)">${(r.overview||'').slice(0,120)}…</span>
+      const poster=r.poster_path
+        ?`<img src="${TMDB_IMG}${r.poster_path}" style="width:44px;height:66px;border-radius:7px;object-fit:cover;flex-shrink:0">`
+        :`<div style="width:44px;height:66px;border-radius:7px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${type}</div>`;
+      return `<div onclick="openTMDBModal(${r.id},'${r.media_type}',{})"
+        style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #ffffff08;display:flex;gap:10px;align-items:center;cursor:pointer;active:opacity:.7">
+        ${poster}
+        <div style="flex:1;min-width:0">
+          <strong style="color:var(--text);font-size:13px">${title}</strong><br>
+          <span style="color:var(--text3);font-size:11px">${year} ${note}</span><br>
+          <span style="font-size:11px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${r.overview||''}</span>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A4A50" stroke-width="2" flex-shrink="0"><polyline points="9 18 15 12 9 6"/></svg>
       </div>`;
     }).join('');
 
@@ -1593,12 +1617,21 @@ window.addEventListener('beforeinstallprompt', e=>{
 });
 
 function installApp(){
+  const isIOS2=/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  if(isIOS2){
+    showToast('Appuie sur Partager puis Sur l ecran d accueil');
+    dismissInstall();
+    return;
+  }
   if(deferredPrompt){
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(()=>{
       deferredPrompt=null;
       dismissInstall();
     });
+  } else {
+    showToast('Utilise le menu de ton navigateur pour installer');
+    dismissInstall();
   }
 }
 
