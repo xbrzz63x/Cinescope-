@@ -1324,31 +1324,61 @@ document.getElementById('aiBtn').addEventListener('click', async ()=>{
   const resp=document.getElementById('aiResp');
   const atxt=document.getElementById('aiTxt');
 
-  const gLabels=state.genres.map(g=>GENRES.find(x=>x.val===g)?.label.replace(/[^\w\s]/g,'').trim()||g);
-  const sgLabels=state.subgenres;
-  const prompt=`Tu es un expert cinéphile enthousiaste. L'utilisateur veut regarder des ${state.type==='all'?'films/séries':state.type==='film'?'films':'séries'}${state.search?` liés à "${state.search}"`:''}${gLabels.length?`, genre: ${gLabels.join(', ')}`:''}${sgLabels.length?`, sous-genre: ${sgLabels.join(', ')}`:''}${state.decades.length?`, décennie: ${state.decades.join(', ')}`:''}${state.moods.length?`, ambiance: ${state.moods.join(', ')}`:''}.
-Recommande 3 titres précis et percutants (ils peuvent ne pas être dans ta liste interne). Pour chaque titre : mentionne le nom en gras (utilise **Titre**), l'année, et 1-2 phrases sur pourquoi c'est parfait pour ces critères. Sois concis et passionné. Réponds en français.`;
-
-  btn.disabled=true;spin.style.display='block';ico.style.display='none';txt.textContent='Analyse…';
+  btn.disabled=true;spin.style.display='block';ico.style.display='none';txt.textContent='Recherche…';
   resp.classList.remove('open');
+
   try {
-    const r=await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    // Use TMDB discover with current filters as recommendations
+    const genreMap={'action':'28','comedie':'35','drame':'18','thriller':'53','sf':'878',
+      'horreur':'27','romance':'10749','fantastique':'14','policier':'80','historique':'36','animation':'16'};
+    const genreIds=state.genres.map(g=>genreMap[g]).filter(Boolean).join(',');
+    const isTV=state.type==='serie';
+    const endpoint=isTV?'/discover/tv':'/discover/movie';
+    const params=new URLSearchParams({
+      language:'fr-FR',sort_by:'vote_average.desc',
+      'vote_count.gte':'200',page:'1',
+      ...(genreIds&&{with_genres:genreIds}),
     });
-    const d=await r.json();
-    if(d.error) throw new Error(d.error.message||JSON.stringify(d.error));
-    const t=d.content?.map(b=>b.text||'').join('')||'Erreur de réponse.';
-    atxt.innerHTML=t.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--text)">$1</strong>').replace(/\n/g,'<br>');
+
+    let results=[];
+    if(state.type==='all'){
+      const [mv,tv]=await Promise.all([
+        tmdbFetch(`/discover/movie?${params}`),
+        tmdbFetch(`/discover/tv?${params}`),
+      ]);
+      results=[
+        ...(mv.results||[]).slice(0,3).map(r=>({...r,media_type:'movie'})),
+        ...(tv.results||[]).slice(0,3).map(r=>({...r,media_type:'tv'})),
+      ];
+    } else {
+      const data=await tmdbFetch(`${endpoint}?${params}`);
+      results=(data.results||[]).slice(0,6).map(r=>({...r,media_type:isTV?'tv':'movie'}));
+    }
+
+    if(!results.length) throw new Error('Aucun résultat');
+
+    const html=results.map(r=>{
+      const title=r.title||r.name;
+      const year=(r.release_date||r.first_air_date||'').slice(0,4);
+      const note=r.vote_average?`⭐ ${r.vote_average.toFixed(1)}`:'';
+      const type=r.media_type==='tv'?'📺':'🎬';
+      return `<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #ffffff08">
+        <strong style="color:var(--text)">${type} ${title}</strong>
+        <span style="color:var(--text3);font-size:12px"> ${year} ${note}</span><br>
+        <span style="font-size:12px;color:var(--text2)">${(r.overview||'').slice(0,120)}…</span>
+      </div>`;
+    }).join('');
+
+    atxt.innerHTML=`<div style="margin-bottom:8px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2)">Top selon tes filtres</div>${html}`;
     resp.classList.add('open');
+
   } catch(e){
-    atxt.innerHTML='⚠️ '+e.message;resp.classList.add('open');
+    atxt.innerHTML='⚠️ '+e.message;
+    resp.classList.add('open');
   } finally {
-    btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Recommandations IA';
+    btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Recommandations';
   }
 });
-
 
 // ══════════════════════════════════════════════
 // FOR YOU
@@ -1412,102 +1442,107 @@ async function generateForYou(){
   const txt=document.getElementById('fyBtnTxt');
   const results=document.getElementById('fyResults');
 
-  const wlMovies=state.watchlist.map(id=>MOVIES.find(x=>x.id===id)).filter(Boolean);
+  // Get all watchlist movies (local + TMDB cached)
+  const wlMovies=state.watchlist.map(id=>
+    MOVIES.find(x=>x.id===id) || state.watchlistData?.[id]
+  ).filter(Boolean);
 
-  // Build weighted profile from 1-5 emotion scores
-  const genreCount={};const moodCount={};
-  wlMovies.forEach(m=>{
-    const score=state.ratings[m.id]||3; // default neutral if unrated
-    const weight=score-3; // -2 to +2
-    m.genre.forEach(g=>{genreCount[g]=(genreCount[g]||0)+weight;});
-    m.mood.forEach(mo=>{moodCount[mo]=(moodCount[mo]||0)+weight;});
-  });
-  const topGenres=Object.entries(genreCount).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
-  const avoidGenres=Object.entries(genreCount).filter(x=>x[1]<-1).map(x=>x[0]);
-  const topMoods=Object.entries(moodCount).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
-
-  // Detailed ratings list for prompt
-  const ratedMovies=wlMovies.filter(m=>state.ratings[m.id]);
-  const ratingDesc=ratedMovies.map(m=>{
-    const mo=MOODS.find(x=>x.v===state.ratings[m.id]);
-    return `"${m.title}" → ${mo.e} ${mo.label} (${state.ratings[m.id]}/5)`;
-  }).join(', ') || 'aucun film noté encore';
-
-  const loved=wlMovies.filter(m=>state.ratings[m.id]>=4);
-  const avgImdb=loved.length
-    ? (loved.reduce((a,m)=>a+m.imdb,0)/loved.length).toFixed(1)
-    : (wlMovies.reduce((a,m)=>a+m.imdb,0)/wlMovies.length).toFixed(1);
-
-  const allTitles=wlMovies.map(m=>`"${m.title}" (${m.year})`).join(', ');
-
-  const prompt=`Tu es un expert cinéphile. Voici la liste complète d'un utilisateur : ${allTitles}.
-
-Notes de l'utilisateur (échelle de ressenti 1=😴 à 5=🤩) :
-${ratingDesc}
-
-Profil déduit :
-- Genres aimés : ${topGenres.join(', ')||'variés'}
-${avoidGenres.length?`- Genres à éviter (mal notés) : ${avoidGenres.join(', ')}`:''}
-- Ambiances préférées : ${topMoods.join(', ')||'variées'}
-- Note IMDb moyenne des titres aimés (≥4/5) : ${avgImdb}/10
-
-Recommande exactement 5 films ou séries hors de sa liste. Adapte tes suggestions à ses ressentis : propose des titres proches de ses 🤩/😊 et évite ce qui rappelle ses 😴/😕. Pour chaque recommandation, réponds UNIQUEMENT en JSON dans ce format exact (un tableau JSON, rien d'autre) :
-[
-  {
-    "titre": "Nom du film",
-    "annee": 2020,
-    "type": "film",
-    "genres": ["genre1","genre2"],
-    "pourquoi": "Explication personnalisée de 1-2 phrases pourquoi cet utilisateur va adorer, en lien direct avec sa liste.",
-    "similarA": "Titre de sa liste auquel ça ressemble le plus",
-    "imdb": 8.2,
-    "ambiance": "intense"
+  if(!wlMovies.length){
+    results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Ajoute des films à ta liste d'abord !</div>';
+    return;
   }
-]
-Réponds UNIQUEMENT avec le JSON, pas de texte avant ou après.`;
 
-  btn.disabled=true;spin.style.display='block';ico.style.display='none';txt.textContent='Analyse tes goûts…';
+  btn.disabled=true;spin.style.display='block';ico.style.display='none';txt.textContent='Analyse tes smileys…';
   results.innerHTML='';
 
   try {
-    const r=await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    // Sort by rating: 🤩(5) and 😊(4) first, then unrated, skip 😴(1) and 😕(2)
+    const loved   = wlMovies.filter(m=>state.ratings[m.tmdbId||m.id]>=4);
+    const neutral = wlMovies.filter(m=>!state.ratings[m.tmdbId||m.id]);
+    const disliked= wlMovies.filter(m=>state.ratings[m.tmdbId||m.id]<=2);
+
+    // Pick sources: loved first, then neutral, max 4 sources
+    const sources=[...loved,...neutral].slice(0,4);
+    if(!sources.length){
+      results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Note des films avec 😊 ou 🤩 pour des suggestions personnalisées !</div>';
+      btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Générer mes recommandations';
+      return;
+    }
+
+    // Get TMDB similar for each source
+    const allSimilar=[];
+    const alreadyInList=new Set(state.watchlist.map(String));
+    const dislikedIds=new Set(disliked.map(m=>String(m.tmdbId||m.id)));
+
+    await Promise.all(sources.map(async m=>{
+      const tmdbId=m.tmdbId||m.id;
+      const mediaType=m.media_type||(m.type==='serie'?'tv':'movie');
+      const rating=state.ratings[tmdbId]||3;
+      try {
+        const data=await tmdbFetch(`/${mediaType}/${tmdbId}/similar?language=fr-FR&page=1`);
+        const similar=(data.results||[])
+          .filter(r=>!alreadyInList.has(String(r.id))&&!dislikedIds.has(String(r.id)))
+          .slice(0,5)
+          .map(r=>({
+            ...r,
+            media_type:mediaType,
+            _sourceTitle:m.title,
+            _sourceRating:rating,
+            _weight:rating, // higher rated source = higher weight
+          }));
+        allSimilar.push(...similar);
+      } catch(e){}
+    }));
+
+    if(!allSimilar.length){
+      results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Pas assez de données TMDB pour ces titres. Essaie d'ajouter des films plus populaires !</div>';
+      btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Générer mes recommandations';
+      return;
+    }
+
+    // Deduplicate and score: sum weights for movies appearing multiple times
+    const scored={};
+    allSimilar.forEach(r=>{
+      const key=String(r.id);
+      if(!scored[key]) scored[key]={...r,_score:0,_sources:[]};
+      scored[key]._score+=r._weight*(r.vote_average||5)/2;
+      scored[key]._sources.push(r._sourceTitle);
     });
-    const d=await r.json();
-    if(d.error) throw new Error(d.error.message||JSON.stringify(d.error));
-    const raw=d.content?.map(b=>b.text||'').join('')||'[]';
-    const clean=raw.replace(/```json|```/g,'').trim();
-    const recos=JSON.parse(clean);
+
+    // Sort by score, take top 6
+    const top=Object.values(scored)
+      .sort((a,b)=>b._score-a._score)
+      .slice(0,6);
 
     results.innerHTML=`
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;padding:0 0 0 0">
-        5 titres sélectionnés pour toi
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:14px">
+        Basé sur tes ${MOODS.find(m=>m.v>=4)?'😊/🤩':''} dans ta liste
       </div>
-      ${recos.map((r,i)=>`
-        <div class="reco-card">
-          <div class="reco-num">Recommandation ${i+1}</div>
-          <div class="reco-title">${r.titre}</div>
-          <div class="reco-year">${r.annee} · ${r.type==='film'?'🎬 Film':'📺 Série'} · ⭐ ${r.imdb}/10</div>
-          <div class="reco-why">${r.pourquoi}</div>
-          <div class="reco-tags">
-            ${(r.genres||[]).map(g=>`<div class="reco-tag">${g}</div>`).join('')}
-            <div class="reco-tag hl">Comme "${r.similarA}"</div>
+      ${top.map((r,i)=>{
+        const title=r.title||r.name;
+        const year=(r.release_date||r.first_air_date||'').slice(0,4);
+        const note=r.vote_average?parseFloat(r.vote_average.toFixed(1)):null;
+        const sources=[...new Set(r._sources)].slice(0,2).join(', ');
+        const poster=r.poster_path
+          ?`<img src="${TMDB_IMG}${r.poster_path}" style="width:52px;height:78px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+          :`<div style="width:52px;height:78px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🎬</div>`;
+        return `<div class="reco-card" onclick="openTMDBModal(${r.id},'${r.media_type}',{})" style="cursor:pointer;display:flex;gap:12px;align-items:flex-start">
+          ${poster}
+          <div style="flex:1;min-width:0">
+            <div class="reco-num">Suggestion ${i+1}</div>
+            <div class="reco-title" style="font-size:16px">${title}</div>
+            <div class="reco-year">${year}${note?` · ⭐ ${note}`:''}${r.media_type==='tv'?' · 📺':' · 🎬'}</div>
+            <div class="reco-tag hl" style="display:inline-block;margin-top:5px">Car tu as aimé "${sources}"</div>
           </div>
-          <button class="reco-search-btn" onclick="searchFromReco('${r.titre.replace(/'/g,"\'")}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            Rechercher dans le catalogue
-          </button>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
       <button class="fy-refresh" onclick="generateForYou()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Nouvelles suggestions
       </button>
     `;
   } catch(e){
-    results.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">⚠️ Erreur lors de la génération.<br><small>${e.message}</small></div>`;
+    results.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">⚠️ ${e.message}</div>`;
   } finally {
     btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Générer mes recommandations';
   }
