@@ -1448,7 +1448,7 @@ async function generateForYou(){
   ).filter(Boolean);
 
   if(!wlMovies.length){
-    results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Ajoute des films à ta liste d'abord !</div>';
+    results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Ajoute des films à ta liste dabord !</div>';
     return;
   }
 
@@ -1495,7 +1495,7 @@ async function generateForYou(){
     }));
 
     if(!allSimilar.length){
-      results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Pas assez de données TMDB pour ces titres. Essaie d'ajouter des films plus populaires !</div>';
+      results.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Pas assez de données TMDB. Essaie des films plus populaires !</div>';
       btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Générer mes recommandations';
       return;
     }
