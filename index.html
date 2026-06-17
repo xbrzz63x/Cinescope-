@@ -574,50 +574,77 @@ let searchTimer;
 async function tmdbSearch(query){
   if(!query || query.length < 2){ renderCards(); return; }
   try {
+    // Build active filters
+    const genreMap={'action':'28','comedie':'35','drame':'18','thriller':'53','sf':'878',
+      'horreur':'27','romance':'10749','fantastique':'14','policier':'80','historique':'36','animation':'16'};
+    const activeGenreIds = state.genres.map(g=>genreMap[g]).filter(Boolean);
+    const activeDecade = state.decades.length ? decadeToYear(state.decades[0]) : {};
+    const tmdbType = state.tmdbType||'all';
+
     // Search titles AND people simultaneously
     const [multiData, personData] = await Promise.all([
       tmdbFetch(`/search/multi?query=${encodeURIComponent(query)}&language=fr-FR&page=1`),
       tmdbFetch(`/search/person?query=${encodeURIComponent(query)}&language=fr-FR&page=1`),
     ]);
 
-    // Title results (movies/series)
-    const titleResults = (multiData.results||[])
-      .filter(r=>r.media_type==='movie'||r.media_type==='tv')
+    // Title results filtered by active type + genre + decade
+    let titleResults = (multiData.results||[])
+      .filter(r=>{
+        if(r.media_type!=='movie' && r.media_type!=='tv') return false;
+        if(tmdbType==='movie' && r.media_type!=='movie') return false;
+        if(tmdbType==='tv' && r.media_type!=='tv') return false;
+        return true;
+      })
       .slice(0,10)
       .map(r=>tmdbToMovie(r));
 
-    // Person results → get their known_for credits + full filmography
+    // Person results → full filmography
     const personResults = [];
-    const persons = (personData.results||[]).slice(0,3); // top 3 matching actors
+    const persons = (personData.results||[]).slice(0,3);
     for(const person of persons){
-      // known_for gives top movies directly
-      const known = (person.known_for||[])
-        .filter(r=>r.media_type==='movie'||r.media_type==='tv')
-        .map(r=>tmdbToMovie(r));
-      personResults.push(...known);
-      // Also fetch full credits if it looks like an actor search
       try {
         const credits = await tmdbFetch(`/person/${person.id}/combined_credits?language=fr-FR`);
-        const filmography = (credits.cast||[])
-          .filter(r=>(r.media_type==='movie'||r.media_type==='tv') && r.poster_path)
+        let filmography = (credits.cast||[])
+          .filter(r=>{
+            if(r.media_type!=='movie' && r.media_type!=='tv') return false;
+            if(!r.poster_path) return false;
+            // Filter by type tab
+            if(tmdbType==='movie' && r.media_type!=='movie') return false;
+            if(tmdbType==='tv' && r.media_type!=='tv') return false;
+            // Filter by genre
+            if(activeGenreIds.length && !(r.genre_ids||[]).some(id=>activeGenreIds.includes(String(id)))) return false;
+            // Filter by decade
+            const year = parseInt((r.release_date||r.first_air_date||'0').slice(0,4));
+            if(activeDecade.from && year < parseInt(activeDecade.from.slice(0,4))) return false;
+            if(activeDecade.to && year > parseInt(activeDecade.to.slice(0,4))) return false;
+            return true;
+          })
           .sort((a,b)=>(b.popularity||0)-(a.popularity||0))
-          .map(r=>tmdbToMovie(r)); // no slice — toute la filmographie
+          .map(r=>tmdbToMovie(r));
         personResults.push(...filmography);
       } catch(e){}
     }
 
-    // Merge: if actor found, prioritize their filmography
+    // Apply genre/decade filter on title results too
+    let filteredTitles = titleResults.filter(r=>{
+      if(activeGenreIds.length && !activeGenreIds.some(id=>r.genre?.includes(
+        Object.keys(genreMap).find(k=>genreMap[k]===id)||''
+      ))) return true; // keep if genre match unclear (no genre_ids in tmdbToMovie yet)
+      if(activeDecade.from && r.year < parseInt(activeDecade.from.slice(0,4))) return false;
+      if(activeDecade.to && r.year > parseInt(activeDecade.to.slice(0,4))) return false;
+      return true;
+    });
+
+    // Merge
     let results;
     if(personResults.length > 0){
-      // Deduplicate by id
       const seen = new Set(personResults.map(r=>r.tmdbId));
-      const uniqueTitles = titleResults.filter(r=>!seen.has(r.tmdbId));
+      const uniqueTitles = filteredTitles.filter(r=>!seen.has(r.tmdbId));
       results = [...personResults, ...uniqueTitles];
-      // Deduplicate
       const ids = new Set();
       results = results.filter(r=>{ if(ids.has(r.tmdbId)) return false; ids.add(r.tmdbId); return true; });
     } else {
-      results = titleResults;
+      results = filteredTitles;
     }
 
     state.tmdbMovies = results.slice(0,200);
