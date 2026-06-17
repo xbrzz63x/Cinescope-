@@ -574,12 +574,57 @@ let searchTimer;
 async function tmdbSearch(query){
   if(!query || query.length < 2){ renderCards(); return; }
   try {
-    const data = await tmdbFetch(`/search/multi?query=${encodeURIComponent(query)}&language=fr-FR&page=1`);
-    const results = (data.results||[])
+    // Search titles AND people simultaneously
+    const [multiData, personData] = await Promise.all([
+      tmdbFetch(`/search/multi?query=${encodeURIComponent(query)}&language=fr-FR&page=1`),
+      tmdbFetch(`/search/person?query=${encodeURIComponent(query)}&language=fr-FR&page=1`),
+    ]);
+
+    // Title results (movies/series)
+    const titleResults = (multiData.results||[])
       .filter(r=>r.media_type==='movie'||r.media_type==='tv')
-      .slice(0,20)
+      .slice(0,10)
       .map(r=>tmdbToMovie(r));
-    renderTMDBCards(results);
+
+    // Person results → get their known_for credits + full filmography
+    const personResults = [];
+    const persons = (personData.results||[]).slice(0,2); // top 2 matching actors
+    for(const person of persons){
+      // known_for gives top movies directly
+      const known = (person.known_for||[])
+        .filter(r=>r.media_type==='movie'||r.media_type==='tv')
+        .map(r=>tmdbToMovie(r));
+      personResults.push(...known);
+      // Also fetch full credits if it looks like an actor search
+      if(persons.length === 1 || titleResults.length < 3){
+        try {
+          const credits = await tmdbFetch(`/person/${person.id}/combined_credits?language=fr-FR`);
+          const filmography = (credits.cast||[])
+            .filter(r=>(r.media_type==='movie'||r.media_type==='tv') && r.poster_path && r.vote_average > 5)
+            .sort((a,b)=>(b.popularity||0)-(a.popularity||0))
+            .slice(0,12)
+            .map(r=>tmdbToMovie(r));
+          personResults.push(...filmography);
+        } catch(e){}
+      }
+    }
+
+    // Merge: if actor found, prioritize their filmography
+    let results;
+    if(personResults.length > 0){
+      // Deduplicate by id
+      const seen = new Set(personResults.map(r=>r.tmdbId));
+      const uniqueTitles = titleResults.filter(r=>!seen.has(r.tmdbId));
+      results = [...personResults, ...uniqueTitles];
+      // Deduplicate
+      const ids = new Set();
+      results = results.filter(r=>{ if(ids.has(r.tmdbId)) return false; ids.add(r.tmdbId); return true; });
+    } else {
+      results = titleResults;
+    }
+
+    state.tmdbMovies = results.slice(0,20);
+    renderTMDBCards(state.tmdbMovies);
   } catch(e){ renderCards(); }
 }
 
