@@ -6,12 +6,7 @@
 <title>CinéScope</title>
 <meta name="description" content="Découvrez, filtrez et notez vos films et séries">
 <meta name="theme-color" content="#09090B">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="CinéScope">
-<link rel="manifest" href="manifest.json">
 <!-- Icône Apple (écran d'accueil iOS) -->
-<link rel="apple-touch-icon" href="icon.png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -101,15 +96,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .splash-bar{width:120px;height:2px;background:#1C1C21;border-radius:2px;margin-top:20px;overflow:hidden}
 .splash-progress{height:100%;background:linear-gradient(90deg,#7C3AED,#A855F7);border-radius:2px;animation:load 1.2s ease forwards}
 @keyframes load{from{width:0}to{width:100%}}
-/* ── INSTALL BANNER ── */
-#installBanner{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:#1C1C21;border:1px solid #7C3AED44;border-radius:14px;padding:14px 16px;width:calc(100% - 36px);max-width:394px;z-index:80;display:flex;align-items:center;gap:12px;transition:transform .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px #00000066}
-#installBanner.show{transform:translateX(-50%) translateY(0)}
-.ib-icon{width:42px;height:42px;background:linear-gradient(135deg,#7C3AED,#4C1D95);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.ib-text{flex:1;min-width:0}
-.ib-title{font-size:13px;font-weight:600;margin-bottom:2px}
-.ib-sub{font-size:11px;color:#9B9A96}
-.ib-btn{padding:7px 13px;background:#7C3AED;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
-.ib-close{background:none;border:none;color:#4A4A50;cursor:pointer;padding:4px;font-size:18px;flex-shrink:0}
+
 
 /* ── AI BTN ── */
 .ai-wrap{padding:12px 18px 8px}
@@ -281,18 +268,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
   <div class="splash-tag">Chargement…</div>
   <div class="splash-bar"><div class="splash-progress"></div></div>
-</div>
-
-<!-- INSTALL BANNER -->
-<div id="installBanner">
-  <div class="ib-icon">🎬</div>
-  <div class="ib-text">
-    <div class="ib-title">Installer CinéScope</div>
-    <div class="ib-sub">Accès rapide depuis l'écran d'accueil</div>
-  </div>
-  <button class="ib-btn" onclick="installApp()">Installer</button>
-  <button class="ib-close" onclick="dismissInstall()">✕</button>
-</div>
+</div></div></div>
 
 <div class="app-shell" id="mainShell">
 
@@ -1603,48 +1579,8 @@ window.addEventListener('load', ()=>{
   }, 1400);
 });
 
-// Service Worker
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-}
 
-// Install prompt (Android Chrome)
-let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt', e=>{
-  e.preventDefault();
-  deferredPrompt=e;
-  setTimeout(()=>document.getElementById('installBanner').classList.add('show'), 3000);
-});
 
-function installApp(){
-  const isIOS2=/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-  if(isIOS2){
-    showToast('Appuie sur Partager puis Sur l ecran d accueil');
-    dismissInstall();
-    return;
-  }
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(()=>{
-      deferredPrompt=null;
-      dismissInstall();
-    });
-  } else {
-    showToast('Utilise le menu de ton navigateur pour installer');
-    dismissInstall();
-  }
-}
-
-function dismissInstall(){
-  document.getElementById('installBanner').classList.remove('show');
-}
-
-// On iOS, hide install banner (handled manually by user via Safari share)
-const isIOS=/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-const isStandalone=window.matchMedia('(display-mode:standalone)').matches;
-if(isIOS && !isStandalone){
-  setTimeout(()=>document.getElementById('installBanner').classList.add('show'), 3000);
-}
 
 // ══════════════════════════════════════════════
 // INIT
