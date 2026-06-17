@@ -588,7 +588,7 @@ async function tmdbSearch(query){
 
     // Person results → get their known_for credits + full filmography
     const personResults = [];
-    const persons = (personData.results||[]).slice(0,2); // top 2 matching actors
+    const persons = (personData.results||[]).slice(0,3); // top 3 matching actors
     for(const person of persons){
       // known_for gives top movies directly
       const known = (person.known_for||[])
@@ -599,7 +599,7 @@ async function tmdbSearch(query){
       try {
         const credits = await tmdbFetch(`/person/${person.id}/combined_credits?language=fr-FR`);
         const filmography = (credits.cast||[])
-          .filter(r=>(r.media_type==='movie'||r.media_type==='tv') && r.poster_path && r.vote_count > 10)
+          .filter(r=>(r.media_type==='movie'||r.media_type==='tv') && r.poster_path)
           .sort((a,b)=>(b.popularity||0)-(a.popularity||0))
           .map(r=>tmdbToMovie(r)); // no slice — toute la filmographie
         personResults.push(...filmography);
@@ -620,7 +620,7 @@ async function tmdbSearch(query){
       results = titleResults;
     }
 
-    state.tmdbMovies = results.slice(0,20);
+    state.tmdbMovies = results.slice(0,200);
     renderTMDBCards(state.tmdbMovies);
   } catch(e){ renderCards(); }
 }
