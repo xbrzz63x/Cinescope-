@@ -1332,7 +1332,7 @@ Recommande 3 titres précis et percutants (ils peuvent ne pas être dans ta list
   btn.disabled=true;spin.style.display='block';ico.style.display='none';txt.textContent='Analyse…';
   resp.classList.remove('open');
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
+    const r=await fetch('/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
@@ -1469,7 +1469,7 @@ Réponds UNIQUEMENT avec le JSON, pas de texte avant ou après.`;
   results.innerHTML='';
 
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
+    const r=await fetch('/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:prompt}]})
