@@ -713,16 +713,21 @@ async function tmdbSearch(query){
     for(const person of persons){
       try {
         const credits = await tmdbFetch(`/person/${person.id}/combined_credits?language=fr-FR`);
-        let filmography = (credits.cast||[])
+
+        // Merge cast + TOUT le crew (réalisateur, photo, costumes, décors…)
+        const allCrew = (credits.crew||[])
+          .map(r=>({...r, media_type: r.media_type||(r.first_air_date?'tv':'movie')}));
+        const allCredits = [...(credits.cast||[]), ...allCrew];
+        const seen = new Set();
+        const deduped = allCredits.filter(r=>{ if(seen.has(r.id)) return false; seen.add(r.id); return true; });
+
+        let filmography = deduped
           .filter(r=>{
             if(r.media_type!=='movie' && r.media_type!=='tv') return false;
             if(!r.poster_path) return false;
-            // Filter by type tab
             if(tmdbType==='movie' && r.media_type!=='movie') return false;
             if(tmdbType==='tv' && r.media_type!=='tv') return false;
-            // Filter by genre
             if(activeGenreIds.length && !(r.genre_ids||[]).some(id=>activeGenreIds.includes(String(id)))) return false;
-            // Filter by decade
             const year = parseInt((r.release_date||r.first_air_date||'0').slice(0,4));
             if(activeDecade.from && year < parseInt(activeDecade.from.slice(0,4))) return false;
             if(activeDecade.to && year > parseInt(activeDecade.to.slice(0,4))) return false;
