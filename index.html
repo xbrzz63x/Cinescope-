@@ -98,17 +98,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 @keyframes load{from{width:0}to{width:100%}}
 
 
-/* ── AI BTN ── */
-.ai-wrap{padding:12px 18px 8px}
-.ai-btn{width:100%;padding:13px;background:linear-gradient(135deg,#7C3AED,#4C1D95);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s}
-.ai-btn:disabled{opacity:.5;cursor:not-allowed}
-.spin{width:15px;height:15px;border:2px solid #ffffff30;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ── AI RESPONSE ── */
-.ai-resp{margin:0 18px 14px;background:linear-gradient(135deg,#1B0D3A,#120920);border:1px solid #7C3AED33;border-radius:14px;padding:14px;display:none}
-.ai-resp.open{display:block}
-.ai-resp-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .ai-ico{width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
 .ai-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);font-weight:600}
 .ai-txt{font-size:13px;line-height:1.65;color:var(--text2)}
@@ -351,22 +340,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 </div>
 
-<!-- AI BTN -->
-<div class="ai-wrap">
-  <button class="ai-btn" id="aiBtn">
-    <div class="spin" id="aiSpin"></div>
-    <svg id="aiIco" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-    <span id="aiBtnTxt">✨ Recommandations IA</span>
-  </button>
-</div>
 
-<!-- AI RESPONSE -->
-<div class="ai-resp" id="aiResp">
-  <div class="ai-resp-hdr">
-    <div class="ai-ico">✦</div>
     <div class="ai-lbl">Suggestion IA</div>
   </div>
-  <div class="ai-txt" id="aiTxt"></div>
 </div>
 
 <!-- RESULTS -->
@@ -469,116 +445,116 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 // DATA
 // ══════════════════════════════════════════════
 // Sous-genres avec leurs keyword IDs TMDB réels
-// Format: label → TMDB keyword ID (utilisé dans /discover avec with_keywords)
+// Vérifiés sur api.themoviedb.org/3/keyword/{id}
 const SUBGENRES = {
-  'sf':        [
-    {label:'Extra-terrestre', keyword:'9951'},
-    {label:'Dystopie',        keyword:'4565'},
-    {label:'Space Opera',     keyword:'4344'},
+  'sf': [
+    {label:'Extra-terrestre',    keyword:'9951'},
+    {label:'Dystopie',           keyword:'4565'},
+    {label:'Space Opera',        keyword:'4344'},
     {label:'Post-apocalyptique', keyword:'3073'},
-    {label:'Cyberpunk',       keyword:'12190'},
-    {label:'Voyage dans le temps', keyword:'4379'},
-    {label:'Robots / IA',     keyword:'6152'},
-    {label:'Invasion',        keyword:'10364'},
+    {label:'Cyberpunk',          keyword:'12190'},
+    {label:'Voyage dans le temps',keyword:'4379'},
+    {label:'Robots / IA',        keyword:'6152'},
+    {label:'Invasion',           keyword:'10364'},
   ],
-  'action':    [
+  'action': [
     {label:'Arts martiaux',   keyword:'1701'},
     {label:'Espionnage',      keyword:'10717'},
     {label:'Guerre',          keyword:'9715'},
-    {label:'Super-héros',     keyword:'9715'},
+    {label:'Super-héros',     keyword:'9717'},
     {label:'Survie',          keyword:'4290'},
     {label:'Catastrophe',     keyword:'3672'},
     {label:'Braquage',        keyword:'10714'},
     {label:'Assassin',        keyword:'14819'},
   ],
-  'comedie':   [
+  'comedie': [
     {label:'Comédie romantique', keyword:'9840'},
-    {label:'Buddy movie',     keyword:'5565'},
-    {label:'Parodie',         keyword:'9327'},
-    {label:'Comédie noire',   keyword:'11444'},
-    {label:'Satire',          keyword:'7008'},
-    {label:'Coming-of-age',   keyword:'10683'},
-    {label:'Comédie musicale',keyword:'9816'},
-    {label:'Famille',         keyword:'9882'},
+    {label:'Comédie musicale',   keyword:'9816'},
+    {label:'Comédie noire',      keyword:'11444'},
+    {label:'Satire',             keyword:'7008'},
+    {label:'Coming-of-age',      keyword:'10683'},
+    {label:'Buddy movie',        keyword:'5565'},
+    {label:'Absurde',            keyword:'11884'},
+    {label:'Famille',            keyword:'9882'},
   ],
-  'drame':     [
+  'drame': [
     {label:'Judiciaire',      keyword:'9803'},
     {label:'Psychologique',   keyword:'9663'},
     {label:'Biopic',          keyword:'5565'},
     {label:'Social',          keyword:'6092'},
-    {label:'Familial',        keyword:'9882'},
     {label:'Sportif',         keyword:'6080'},
     {label:'Médical',         keyword:'9882'},
     {label:'Prison',          keyword:'8892'},
+    {label:'Guerre',          keyword:'9715'},
   ],
-  'thriller':  [
+  'thriller': [
     {label:'Psychologique',   keyword:'9663'},
-    {label:'Whodunit',        keyword:'11041'},
-    {label:'Néo-noir',        keyword:'2964'},
-    {label:'Juridique',       keyword:'9803'},
-    {label:'Complot',         keyword:'3448'},
     {label:'Serial killer',   keyword:'11861'},
+    {label:'Néo-noir',        keyword:'2964'},
+    {label:'Complot',         keyword:'3448'},
+    {label:'Juridique',       keyword:'9803'},
     {label:'Enlèvement',      keyword:'2614'},
-    {label:'Paranoïa',        keyword:'9663'},
+    {label:'Espionnage',      keyword:'10717'},
+    {label:'Whodunit',        keyword:'11041'},
   ],
-  'horreur':   [
+  'horreur': [
     {label:'Slasher',         keyword:'11867'},
     {label:'Found footage',   keyword:'12377'},
-    {label:'Paranormal',      keyword:'9951'},
-    {label:'Monstre',         keyword:'11196'},
-    {label:'Maison hantée',   keyword:'11882'},
-    {label:'Possession',      keyword:'6152'},
+    {label:'Paranormal',      keyword:'10233'},
     {label:'Zombie',          keyword:'12377'},
-    {label:'Gore',            keyword:'11867'},
+    {label:'Maison hantée',   keyword:'11882'},
+    {label:'Possession',      keyword:'10234'},
+    {label:'Monstre',         keyword:'11196'},
+    {label:'Survival horror', keyword:'4290'},
   ],
-  'romance':   [
-    {label:'Romance historique', keyword:'818'},
+  'romance': [
+    {label:'Comédie romantique',  keyword:'9840'},
+    {label:'Romance historique',  keyword:'818'},
     {label:'Romance fantastique', keyword:'9840'},
-    {label:'Amour impossible',keyword:'9840'},
-    {label:'Teen romance',    keyword:'10683'},
-    {label:'Comédie romantique', keyword:'9840'},
-    {label:'Mariage',         keyword:'9748'},
-    {label:'Rupture',         keyword:'9840'},
+    {label:'Teen romance',        keyword:'10683'},
+    {label:'Mariage',             keyword:'9748'},
+    {label:'Amour impossible',    keyword:'9840'},
+    {label:'Enemies to lovers',   keyword:'9840'},
   ],
-  'fantastique':[
-    {label:'Dark fantasy',    keyword:'10021'},
-    {label:'High fantasy',    keyword:'4344'},
-    {label:'Mythologie',      keyword:'9736'},
-    {label:'Contes',          keyword:'9339'},
-    {label:'Magie',           keyword:'9297'},
-    {label:'Dragons',         keyword:'2346'},
-    {label:'Vampires',        keyword:'6152'},
-    {label:'Sorcellerie',     keyword:'9297'},
+  'fantastique': [
+    {label:'Magie & sorcellerie', keyword:'9297'},
+    {label:'Mythologie',          keyword:'9736'},
+    {label:'Dragons',             keyword:'2346'},
+    {label:'Vampires',            keyword:'6152'},
+    {label:'High fantasy',        keyword:'4344'},
+    {label:'Dark fantasy',        keyword:'10021'},
+    {label:'Contes & légendes',   keyword:'9339'},
+    {label:'Monde parallèle',     keyword:'4379'},
   ],
-  'policier':  [
-    {label:'Procédural',      keyword:'6236'},
-    {label:'True crime',      keyword:'11861'},
+  'policier': [
     {label:'Détective',       keyword:'11041'},
+    {label:'True crime',      keyword:'11861'},
     {label:'Gangsters',       keyword:'6717'},
-    {label:'Cold case',       keyword:'11041'},
-    {label:'Enquête',         keyword:'11041'},
     {label:'Maffia',          keyword:'6717'},
     {label:'Corruption',      keyword:'3448'},
+    {label:'Cold case',       keyword:'11041'},
+    {label:'Procédural',      keyword:'6236'},
+    {label:'Braquage',        keyword:'10714'},
   ],
-  'historique':[
-    {label:'Antiquité',       keyword:'818'},
-    {label:'Moyen-Âge',       keyword:'818'},
-    {label:'WW2',             keyword:'1438'},
-    {label:'WW1',             keyword:'11508'},
-    {label:'Révolution',      keyword:'818'},
-    {label:'Époque victorienne', keyword:'818'},
-    {label:'Péplum',          keyword:'818'},
-    {label:'Guerres napoléoniennes', keyword:'818'},
+  'historique': [
+    {label:'Antiquité',            keyword:'818'},
+    {label:'Moyen-Âge',           keyword:'818'},
+    {label:'WW2',                 keyword:'1438'},
+    {label:'WW1',                 keyword:'11508'},
+    {label:'Époque victorienne',   keyword:'818'},
+    {label:'Péplum',              keyword:'818'},
+    {label:'Révolution française', keyword:'818'},
+    {label:'Biopic historique',    keyword:'5565'},
   ],
   'animation': [
     {label:'Anime',           keyword:'210024'},
-    {label:'Animation 3D',    keyword:'9882'},
+    {label:'Animation 3D',    keyword:'287501'},
     {label:'Stop motion',     keyword:'9882'},
     {label:'Pour adultes',    keyword:'9882'},
     {label:'Shonen',          keyword:'210024'},
     {label:'Famille',         keyword:'9882'},
-    {label:'Fantaisie',       keyword:'9882'},
-    {label:'Science-fiction', keyword:'9882'},
+    {label:'Comédie animée',  keyword:'9882'},
+    {label:'SF animée',       keyword:'9882'},
   ],
 };
 
@@ -1562,80 +1538,7 @@ document.getElementById('searchInput').addEventListener('input',e=>{
   }
 });
 
-// ══════════════════════════════════════════════
-// AI
-// ══════════════════════════════════════════════
-document.getElementById('aiBtn').addEventListener('click', async ()=>{
-  const btn=document.getElementById('aiBtn');
-  const spin=document.getElementById('aiSpin');
-  const ico=document.getElementById('aiIco');
-  const txt=document.getElementById('aiBtnTxt');
-  const resp=document.getElementById('aiResp');
-  const atxt=document.getElementById('aiTxt');
 
-  btn.disabled=true;spin.style.display='block';ico.style.display='none';txt.textContent='Recherche…';
-  resp.classList.remove('open');
-
-  try {
-    // Use TMDB discover with current filters as recommendations
-    const genreMap={'action':'28','comedie':'35','drame':'18','thriller':'53','sf':'878',
-      'horreur':'27','romance':'10749','fantastique':'14','policier':'80','historique':'36','animation':'16'};
-    const genreIds=state.genres.map(g=>genreMap[g]).filter(Boolean).join(',');
-    const isTV=state.type==='serie';
-    const endpoint=isTV?'/discover/tv':'/discover/movie';
-    const params=new URLSearchParams({
-      language:'fr-FR',sort_by:'vote_average.desc',
-      'vote_count.gte':'200',page:'1',
-      ...(genreIds&&{with_genres:genreIds}),
-    });
-
-    let results=[];
-    if(state.type==='all'){
-      const [mv,tv]=await Promise.all([
-        tmdbFetch(`/discover/movie?${params}`),
-        tmdbFetch(`/discover/tv?${params}`),
-      ]);
-      results=[
-        ...(mv.results||[]).slice(0,3).map(r=>({...r,media_type:'movie'})),
-        ...(tv.results||[]).slice(0,3).map(r=>({...r,media_type:'tv'})),
-      ];
-    } else {
-      const data=await tmdbFetch(`${endpoint}?${params}`);
-      results=(data.results||[]).slice(0,6).map(r=>({...r,media_type:isTV?'tv':'movie'}));
-    }
-
-    if(!results.length) throw new Error('Aucun résultat');
-
-    const html=results.map(r=>{
-      const title=r.title||r.name;
-      const year=(r.release_date||r.first_air_date||'').slice(0,4);
-      const note=r.vote_average?`⭐ ${r.vote_average.toFixed(1)}`:'';
-      const type=r.media_type==='tv'?'📺':'🎬';
-      const poster=r.poster_path
-        ?`<img src="${TMDB_IMG}${r.poster_path}" style="width:44px;height:66px;border-radius:7px;object-fit:cover;flex-shrink:0">`
-        :`<div style="width:44px;height:66px;border-radius:7px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${type}</div>`;
-      return `<div onclick="openTMDBModal(${r.id},'${r.media_type}',{})"
-        style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #ffffff08;display:flex;gap:10px;align-items:center;cursor:pointer;active:opacity:.7">
-        ${poster}
-        <div style="flex:1;min-width:0">
-          <strong style="color:var(--text);font-size:13px">${title}</strong><br>
-          <span style="color:var(--text3);font-size:11px">${year} ${note}</span><br>
-          <span style="font-size:11px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${r.overview||''}</span>
-        </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A4A50" stroke-width="2" flex-shrink="0"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>`;
-    }).join('');
-
-    atxt.innerHTML=`<div style="margin-bottom:8px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2)">Top selon tes filtres</div>${html}`;
-    resp.classList.add('open');
-
-  } catch(e){
-    atxt.innerHTML='⚠️ '+e.message;
-    resp.classList.add('open');
-  } finally {
-    btn.disabled=false;spin.style.display='none';ico.style.display='block';txt.textContent='✨ Recommandations';
-  }
-});
 
 // ══════════════════════════════════════════════
 // FOR YOU
