@@ -983,9 +983,14 @@ function toggleGenre(chip){
     state.activeGenreForSub=v;
   } else {
     state.genres=state.genres.filter(x=>x!==v);
-    // remove its subgenres from selection
-    if(SUBGENRES[v]) state.subgenres=state.subgenres.filter(sg=>!SUBGENRES[v].includes(sg));
-    // pick another active genre for subgenres
+    // Désélectionner tous les sous-genres associés à ce genre
+    const subLabels=(SUBGENRES[v]||[]).map(s=>s.label);
+    state.subgenres=state.subgenres.filter(sg=>!subLabels.includes(sg));
+    // Décocher visuellement les chips sous-genres
+    document.querySelectorAll('.sg-chip').forEach(c=>{
+      if(subLabels.includes(c.dataset.sg)) c.classList.remove('on');
+    });
+    // Choisir un autre genre actif pour les sous-genres
     state.activeGenreForSub=state.genres.length ? state.genres[state.genres.length-1] : null;
   }
   renderSubgenres();
