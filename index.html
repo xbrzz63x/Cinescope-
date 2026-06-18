@@ -909,6 +909,32 @@ function decadeToYear(d){
   return map[d]||{};
 }
 
+
+// ══════════════════════════════════════════════
+// PERSISTANCE (localStorage)
+// ══════════════════════════════════════════════
+function saveData(){
+  try {
+    localStorage.setItem('cs_watchlist', JSON.stringify(state.watchlist));
+    localStorage.setItem('cs_ratings', JSON.stringify(state.ratings));
+    localStorage.setItem('cs_watchlistData', JSON.stringify(state.watchlistData));
+    localStorage.setItem('cs_viewedIds', JSON.stringify(state.viewedIds));
+  } catch(e){}
+}
+
+function loadData(){
+  try {
+    const wl = localStorage.getItem('cs_watchlist');
+    const rt = localStorage.getItem('cs_ratings');
+    const wd = localStorage.getItem('cs_watchlistData');
+    const vi = localStorage.getItem('cs_viewedIds');
+    if(wl) state.watchlist = JSON.parse(wl);
+    if(rt) state.ratings = JSON.parse(rt);
+    if(wd) state.watchlistData = JSON.parse(wd);
+    if(vi) state.viewedIds = JSON.parse(vi);
+  } catch(e){}
+}
+
 // ══════════════════════════════════════════════
 // FILM STRIP
 // ══════════════════════════════════════════════
@@ -1144,7 +1170,7 @@ function renderTMDBCards(movies){
 // ══════════════════════════════════════════════
 async function openTMDBModal(tmdbId, mediaType, basicData){
   // Track history
-  if(!state.viewedIds.includes(tmdbId)){state.viewedIds.unshift(tmdbId);if(state.viewedIds.length>20)state.viewedIds.pop();}
+  if(!state.viewedIds.includes(tmdbId)){state.viewedIds.unshift(tmdbId);if(state.viewedIds.length>20)state.viewedIds.pop();saveData();}
 
   // Show modal immediately with basic data, then enrich
   const inWL = state.watchlist.includes(tmdbId);
@@ -1262,6 +1288,7 @@ function toggleWatchlistTMDB(tmdbId, basicData){
     if(cached) state.watchlistData[tmdbId] = cached;
     showToast('Ajouté à ta liste ✓');
   }
+  saveData();
   updateWLBadge();
   if(state.tmdbMode) renderTMDBCards(state.tmdbMovies||[]);
   else renderCards();
@@ -1387,6 +1414,7 @@ function setRating(id, val){
     const mo=MOODS.find(m=>m.v===val);
     showToast(mo.e+' '+mo.label+' !');
   }
+  saveData();
   renderCards();
 }
 
@@ -1411,6 +1439,7 @@ function toggleWatchlist(id){
     state.watchlist.push(id);
     showToast('Ajouté à ta liste ✓');
   }
+  saveData();
   updateWLBadge();
   renderCards();
   renderWatchlist();
@@ -1803,9 +1832,21 @@ window.addEventListener('load', ()=>{
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+
+// Sauvegarde quand on quitte la page
+window.addEventListener('beforeunload', saveData);
+// Sauvegarde quand on passe en arrière-plan (mobile)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden') saveData();
+});
+// Sauvegarde toutes les 30 secondes en fond
+setInterval(saveData, 30000);
+
+loadData(); // restore saved watchlist/ratings
 buildGenreChips();
 initChips('decadeChips','decades');
 initChips('moodChips','moods');
+updateWLBadge();
 loadTrending(); // load real TMDB data on start
 </script>
 </body>
