@@ -441,119 +441,119 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 // ══════════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════════
-// Sous-genres avec leurs keyword IDs TMDB réels
-// Vérifiés sur api.themoviedb.org/3/keyword/{id}
+// Sous-genres avec keyword IDs TMDB (plusieurs IDs séparés par | = logique OR)
 const SUBGENRES = {
   'sf': [
-    {label:'Extra-terrestre',    keyword:'9951'},
-    {label:'Dystopie',           keyword:'4565'},
-    {label:'Space Opera',        keyword:'4344'},
-    {label:'Post-apocalyptique', keyword:'3073'},
-    {label:'Cyberpunk',          keyword:'12190'},
-    {label:'Voyage dans le temps',keyword:'4379'},
-    {label:'Robots / IA',        keyword:'6152'},
-    {label:'Invasion',           keyword:'10364'},
+    {label:'Extra-terrestre',     keywords:'9951|10364|9882'},
+    {label:'Dystopie',            keywords:'4565|3073|9882'},
+    {label:'Space Opera',         keywords:'4344|9951|9882'},
+    {label:'Post-apocalyptique',  keywords:'3073|4565|9882'},
+    {label:'Cyberpunk',           keywords:'12190|6152|9882'},
+    {label:'Voyage dans le temps',keywords:'4379|9882|9291'},
+    {label:'Robots / IA',         keywords:'6152|4379|9882'},
+    {label:'Invasion',            keywords:'10364|9951|9882'},
   ],
   'action': [
-    {label:'Arts martiaux',   keyword:'1701'},
-    {label:'Espionnage',      keyword:'10717'},
-    {label:'Guerre',          keyword:'9715'},
-    {label:'Super-héros',     keyword:'9717'},
-    {label:'Survie',          keyword:'4290'},
-    {label:'Catastrophe',     keyword:'3672'},
-    {label:'Braquage',        keyword:'10714'},
-    {label:'Assassin',        keyword:'14819'},
+    {label:'Arts martiaux',  keywords:'1701|9748|11322'},
+    {label:'Espionnage',     keywords:'10717|3801|9748'},
+    {label:'Guerre',         keywords:'9715|1394|9882'},
+    {label:'Super-héros',    keywords:'9717|9718|155030'},
+    {label:'Survie',         keywords:'4290|11337|9882'},
+    {label:'Catastrophe',    keywords:'3672|9882|9291'},
+    {label:'Braquage',       keywords:'10714|9714|5564'},
+    {label:'Assassin',       keywords:'14819|11861|9882'},
   ],
   'comedie': [
-    {label:'Comédie romantique', keyword:'9840'},
-    {label:'Comédie musicale',   keyword:'9816'},
-    {label:'Comédie noire',      keyword:'11444'},
-    {label:'Satire',             keyword:'7008'},
-    {label:'Coming-of-age',      keyword:'10683'},
-    {label:'Buddy movie',        keyword:'5565'},
-    {label:'Absurde',            keyword:'11884'},
-    {label:'Famille',            keyword:'9882'},
+    {label:'Comédie romantique', keywords:'9840|9882|9336'},
+    {label:'Comédie musicale',   keywords:'9816|2649|9882'},
+    {label:'Comédie noire',      keywords:'11444|9882|9663'},
+    {label:'Satire',             keywords:'7008|9882|6236'},
+    {label:'Coming-of-age',      keywords:'10683|9336|9882'},
+    {label:'Buddy movie',        keywords:'5565|9882|9336'},
+    {label:'Absurde',            keywords:'11884|9882|9336'},
+    {label:'Parodie',            keywords:'7008|11444|9882'},
   ],
   'drame': [
-    {label:'Judiciaire',      keyword:'9803'},
-    {label:'Psychologique',   keyword:'9663'},
-    {label:'Biopic',          keyword:'5565'},
-    {label:'Social',          keyword:'6092'},
-    {label:'Sportif',         keyword:'6080'},
-    {label:'Médical',         keyword:'9882'},
-    {label:'Prison',          keyword:'8892'},
-    {label:'Guerre',          keyword:'9715'},
+    {label:'Judiciaire',    keywords:'9803|3801|9882'},
+    {label:'Psychologique', keywords:'9663|10234|9291'},
+    {label:'Biopic',        keywords:'5565|9882|9714'},
+    {label:'Social',        keywords:'6092|9882|3801'},
+    {label:'Sportif',       keywords:'6080|9882|6236'},
+    {label:'Médical',       keywords:'9882|9336|3801'},
+    {label:'Prison',        keywords:'8892|9882|3801'},
+    {label:'Guerre',        keywords:'9715|1394|9882'},
   ],
   'thriller': [
-    {label:'Psychologique',   keyword:'9663'},
-    {label:'Serial killer',   keyword:'11861'},
-    {label:'Néo-noir',        keyword:'2964'},
-    {label:'Complot',         keyword:'3448'},
-    {label:'Juridique',       keyword:'9803'},
-    {label:'Enlèvement',      keyword:'2614'},
-    {label:'Espionnage',      keyword:'10717'},
-    {label:'Whodunit',        keyword:'11041'},
+    {label:'Psychologique',  keywords:'9663|10234|9291'},
+    {label:'Serial killer',  keywords:'11861|3614|9663'},
+    {label:'Néo-noir',       keywords:'2964|9882|9663'},
+    {label:'Complot',        keywords:'3448|9882|10717'},
+    {label:'Juridique',      keywords:'9803|3801|9882'},
+    {label:'Enlèvement',     keywords:'2614|9882|3801'},
+    {label:'Espionnage',     keywords:'10717|3801|9748'},
+    {label:'Whodunit',       keywords:'11041|3614|9882'},
   ],
   'horreur': [
-    {label:'Slasher',         keyword:'11867'},
-    {label:'Found footage',   keyword:'12377'},
-    {label:'Paranormal',      keyword:'10233'},
-    {label:'Zombie',          keyword:'12377'},
-    {label:'Maison hantée',   keyword:'11882'},
-    {label:'Possession',      keyword:'10234'},
-    {label:'Monstre',         keyword:'11196'},
-    {label:'Survival horror', keyword:'4290'},
+    {label:'Slasher',        keywords:'11867|3614|9882'},
+    {label:'Possession',     keywords:'10234|9291|9882'},
+    {label:'Zombie',         keywords:'12377|163|9882'},
+    {label:'Paranormal',     keywords:'10233|9291|6152'},
+    {label:'Maison hantée',  keywords:'11882|10233|9291'},
+    {label:'Found footage',  keywords:'10168|283742|9882'},
+    {label:'Monstre',        keywords:'11196|1299|5616'},
+    {label:'Survival horror',keywords:'4290|11337|11867'},
   ],
   'romance': [
-    {label:'Comédie romantique',  keyword:'9840'},
-    {label:'Romance historique',  keyword:'818'},
-    {label:'Romance fantastique', keyword:'9840'},
-    {label:'Teen romance',        keyword:'10683'},
-    {label:'Mariage',             keyword:'9748'},
-    {label:'Amour impossible',    keyword:'9840'},
-    {label:'Enemies to lovers',   keyword:'9840'},
+    {label:'Comédie romantique',  keywords:'9840|9882|9336'},
+    {label:'Romance historique',  keywords:'818|9882|9336'},
+    {label:'Romance fantastique', keywords:'9840|9882|9291'},
+    {label:'Teen romance',        keywords:'10683|9336|9882'},
+    {label:'Mariage',             keywords:'9748|9882|9336'},
+    {label:'Amour impossible',    keywords:'9840|9882|9663'},
+    {label:'Enemies to lovers',   keywords:'9840|9882|9336'},
   ],
   'fantastique': [
-    {label:'Magie & sorcellerie', keyword:'9297'},
-    {label:'Mythologie',          keyword:'9736'},
-    {label:'Dragons',             keyword:'2346'},
-    {label:'Vampires',            keyword:'6152'},
-    {label:'High fantasy',        keyword:'4344'},
-    {label:'Dark fantasy',        keyword:'10021'},
-    {label:'Contes & légendes',   keyword:'9339'},
-    {label:'Monde parallèle',     keyword:'4379'},
+    {label:'Magie & sorcellerie', keywords:'9297|9882|9736'},
+    {label:'Mythologie',          keywords:'9736|9882|818'},
+    {label:'Dragons',             keywords:'2346|9882|4344'},
+    {label:'Vampires',            keywords:'6152|9882|9291'},
+    {label:'High fantasy',        keywords:'4344|9882|9297'},
+    {label:'Dark fantasy',        keywords:'10021|9882|9663'},
+    {label:'Contes & légendes',   keywords:'9339|9882|9736'},
+    {label:'Monde parallèle',     keywords:'4379|9882|9291'},
   ],
   'policier': [
-    {label:'Détective',       keyword:'11041'},
-    {label:'True crime',      keyword:'11861'},
-    {label:'Gangsters',       keyword:'6717'},
-    {label:'Maffia',          keyword:'6717'},
-    {label:'Corruption',      keyword:'3448'},
-    {label:'Cold case',       keyword:'11041'},
-    {label:'Procédural',      keyword:'6236'},
-    {label:'Braquage',        keyword:'10714'},
+    {label:'Détective',    keywords:'11041|3614|9882'},
+    {label:'True crime',   keywords:'11861|5565|9882'},
+    {label:'Gangsters',    keywords:'6717|9882|2964'},
+    {label:'Mafia',        keywords:'6717|3448|9882'},
+    {label:'Corruption',   keywords:'3448|9882|9803'},
+    {label:'Cold case',    keywords:'11041|3614|9882'},
+    {label:'Procédural',   keywords:'6236|11041|9882'},
+    {label:'Braquage',     keywords:'10714|9714|5564'},
   ],
   'historique': [
-    {label:'Antiquité',            keyword:'818'},
-    {label:'Moyen-Âge',           keyword:'818'},
-    {label:'WW2',                 keyword:'1438'},
-    {label:'WW1',                 keyword:'11508'},
-    {label:'Époque victorienne',   keyword:'818'},
-    {label:'Péplum',              keyword:'818'},
-    {label:'Révolution française', keyword:'818'},
-    {label:'Biopic historique',    keyword:'5565'},
+    {label:'Antiquité',             keywords:'818|9882|9736'},
+    {label:'Moyen-Âge',            keywords:'818|9882|9297'},
+    {label:'WW2',                  keywords:'1438|9715|9882'},
+    {label:'WW1',                  keywords:'11508|9715|9882'},
+    {label:'Époque victorienne',    keywords:'818|9882|9291'},
+    {label:'Péplum',               keywords:'818|9882|9736'},
+    {label:'Révolution française',  keywords:'818|9882|9715'},
+    {label:'Biopic historique',     keywords:'5565|818|9882'},
   ],
   'animation': [
-    {label:'Anime',           keyword:'210024'},
-    {label:'Animation 3D',    keyword:'287501'},
-    {label:'Stop motion',     keyword:'9882'},
-    {label:'Pour adultes',    keyword:'9882'},
-    {label:'Shonen',          keyword:'210024'},
-    {label:'Famille',         keyword:'9882'},
-    {label:'Comédie animée',  keyword:'9882'},
-    {label:'SF animée',       keyword:'9882'},
+    {label:'Anime',          keywords:'210024|287501|9882'},
+    {label:'Animation 3D',   keywords:'287501|9882|9336'},
+    {label:'Stop motion',    keywords:'287501|9882|9336'},
+    {label:'Pour adultes',   keywords:'9882|9663|9336'},
+    {label:'Shonen',         keywords:'210024|9882|9336'},
+    {label:'Famille',        keywords:'9882|9336|10683'},
+    {label:'Comédie animée', keywords:'9882|9816|9336'},
+    {label:'SF animée',      keywords:'9882|9951|4344'},
   ],
 };
+
 
 // Helper: get label list for a genre (backwards compat)
 function getSubgenreLabels(genre){
@@ -561,7 +561,7 @@ function getSubgenreLabels(genre){
 }
 // Helper: get keyword for a subgenre label
 function getSubgenreKeyword(genre, label){
-  return (SUBGENRES[genre]||[]).find(s=>s.label===label)?.keyword||null;
+  return (SUBGENRES[genre]||[]).find(s=>s.label===label)?.keywords||null;
 }
 
 const MOVIES = [
@@ -817,14 +817,15 @@ async function loadByFilters(){
   const allGenreIds = [...new Set([...state.genres.map(g=>genreMap[g]).filter(Boolean),...moodGenreIds])];
   const genreIds = allGenreIds.join(',');
 
-  // Keyword IDs from active subgenres
-  const keywordIds = state.subgenres.map(sg=>{
+  // Keyword IDs from active subgenres (| = OR within subgenre, combine all with |)
+  const allKeywords = state.subgenres.flatMap(sg=>{
     for(const [genre, items] of Object.entries(SUBGENRES)){
       const found = items.find(s=>s.label===sg);
-      if(found) return found.keyword;
+      if(found) return (found.keywords||found.keyword||'').split('|');
     }
-    return null;
-  }).filter(Boolean).join(',');
+    return [];
+  }).filter(Boolean);
+  const keywordIds = [...new Set(allKeywords)].join('|');
 
   const decadeParam = state.decades.length ? decadeToYear(state.decades[0]) : {};
   const tmdbType=state.tmdbType||'all';
