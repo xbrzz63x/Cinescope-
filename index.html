@@ -833,41 +833,67 @@ async function loadByFilters(){
     'horreur':'27','romance':'10749','fantastique':'14','policier':'80',
     'historique':'36','animation':'16'
   };
-  const genreIds = state.genres.map(g=>genreMap[g]).filter(Boolean).join(',');
-  const decadeParam = state.decades.length ? decadeToYear(state.decades[0]) : '';
+  // Add genres implied by moods
+  const moodGenreMap = {'intense':['28','53'],'feel-good':['35','10749'],'reflexif':['18'],'famille':['10751'],'soiree':['35'],'culte':[],'romantique':['10749']};
+  const moodGenreIds = [...new Set(state.moods.flatMap(m=>moodGenreMap[m]||[]))];
+  const allGenreIds = [...new Set([...state.genres.map(g=>genreMap[g]).filter(Boolean),...moodGenreIds])];
+  const genreIds = allGenreIds.join(',');
+
+  // Keyword IDs from active subgenres
+  const keywordIds = state.subgenres.map(sg=>{
+    for(const [genre, items] of Object.entries(SUBGENRES)){
+      const found = items.find(s=>s.label===sg);
+      if(found) return found.keyword;
+    }
+    return null;
+  }).filter(Boolean).join(',');
+
+  const decadeParam = state.decades.length ? decadeToYear(state.decades[0]) : {};
   const tmdbType=state.tmdbType||'all';
   const isTV = tmdbType==='tv';
   const isBoth = tmdbType==='all';
 
   try {
-    const endpoint = isTV ? '/discover/tv' : '/discover/movie';
-    const params = new URLSearchParams({
+    // Build params — TV uses first_air_date, movie uses primary_release_date
+    const baseParams = {
       language:'fr-FR', sort_by:'popularity.desc', page:'1',
       ...(genreIds && {with_genres: genreIds}),
       ...(keywordIds && {with_keywords: keywordIds}),
+    };
+    const movieParams = new URLSearchParams({
+      ...baseParams,
       ...(decadeParam.from && {'primary_release_date.gte': decadeParam.from}),
       ...(decadeParam.to   && {'primary_release_date.lte': decadeParam.to}),
-      ...(decadeParam.from && isTV && {'first_air_date.gte': decadeParam.from}),
-      ...(decadeParam.to   && isTV && {'first_air_date.lte': decadeParam.to}),
+    });
+    const tvParams = new URLSearchParams({
+      ...baseParams,
+      ...(decadeParam.from && {'first_air_date.gte': decadeParam.from}),
+      ...(decadeParam.to   && {'first_air_date.lte': decadeParam.to}),
     });
 
     let results = [];
     if(isBoth){
       const [mv, tv] = await Promise.all([
-        tmdbFetch(`/discover/movie?${params}`),
-        tmdbFetch(`/discover/tv?${params}`),
+        tmdbFetch(`/discover/movie?${movieParams}`),
+        tmdbFetch(`/discover/tv?${tvParams}`),
       ]);
       results = [
         ...(mv.results||[]).slice(0,10).map(r=>({...r,media_type:'movie'})),
         ...(tv.results||[]).slice(0,10).map(r=>({...r,media_type:'tv'})),
       ];
+    } else if(isTV){
+      const data = await tmdbFetch(`/discover/tv?${tvParams}`);
+      results = (data.results||[]).slice(0,20).map(r=>({...r,media_type:'tv'}));
     } else {
-      const data = await tmdbFetch(`${endpoint}?${params}`);
-      results = (data.results||[]).slice(0,20).map(r=>({...r,media_type:isTV?'tv':'movie'}));
+      const data = await tmdbFetch(`/discover/movie?${movieParams}`);
+      results = (data.results||[]).slice(0,20).map(r=>({...r,media_type:'movie'}));
     }
     state.tmdbMovies = results.map(r=>tmdbToMovie(r));
     renderTMDBCards(state.tmdbMovies);
-  } catch(e){ renderCards(); }
+  } catch(e){
+    console.error('loadByFilters error:', e);
+    renderCards();
+  }
 }
 
 function decadeToYear(d){
@@ -933,7 +959,7 @@ function toggleGenre(chip){
   }
   renderSubgenres();
   updateFilterCount();
-  renderCards();
+  refreshResults();
 }
 
 function renderSubgenres(){
@@ -957,7 +983,7 @@ function renderSubgenres(){
       if(state.subgenres.includes(sg)) state.subgenres=state.subgenres.filter(x=>x!==sg);
       else state.subgenres.push(sg);
       updateFilterCount();
-      renderCards();
+      refreshResults();
     });
   });
   panel.classList.add('open');
@@ -974,12 +1000,25 @@ function initChips(containerId, stateKey){
       if(state[stateKey].includes(v)) state[stateKey]=state[stateKey].filter(x=>x!==v);
       else state[stateKey].push(v);
       updateFilterCount();
-      state.tmdbMode=true;
-      if(state.genres.length||state.decades.length) loadByFilters(); else loadTrending();
+      refreshResults();
     });
   });
 }
 
+
+// ══════════════════════════════════════════════
+// REFRESH — appelle la bonne fonction selon l'état
+// ══════════════════════════════════════════════
+function refreshResults(){
+  state.tmdbMode=true;
+  if(state.search && state.search.length>=2){
+    tmdbSearch(state.search);
+  } else if(state.genres.length||state.decades.length||state.moods.length||state.subgenres.length){
+    loadByFilters();
+  } else {
+    loadTrending();
+  }
+}
 // ══════════════════════════════════════════════
 // FILTER COUNT BADGE
 // ══════════════════════════════════════════════
