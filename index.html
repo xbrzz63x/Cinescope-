@@ -468,19 +468,128 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 // ══════════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════════
+// Sous-genres avec leurs keyword IDs TMDB réels
+// Format: label → TMDB keyword ID (utilisé dans /discover avec with_keywords)
 const SUBGENRES = {
-  'sf':        ['Extra-terrestre','Dystopie','Space Opera','Post-apocalyptique','Cyberpunk','Voyage dans le temps','Uchronie','Biopunk'],
-  'action':    ['Arts martiaux','Espionnage','Guerre','Super-héros','Survie','Catastrophe','Mercenaire','Poursuite'],
-  'comedie':   ['Comédie romantique','Buddy movie','Parodie','Comédie noire','Satire','Coming-of-age','Comédie musicale'],
-  'drame':     ['Drame judiciaire','Drame psychologique','Biopic','Drame social','Drame familial','Drame historique','Drame sportif'],
-  'thriller':  ['Thriller psychologique','Techno-thriller','Whodunit','Néo-noir','Thriller juridique','Conspiracy thriller','Giallo'],
-  'horreur':   ['Slasher','Found footage','Horreur psychologique','Creature feature','Horreur surnaturelle','Gore','Body horror'],
-  'romance':   ['Romance historique','Romance fantastique','Enemies to lovers','Slow burn','Epistolaire','Teen romance'],
-  'fantastique':['Dark fantasy','High fantasy','Heroic fantasy','Mythologie','Contes','Urban fantasy','Magie','Légendes'],
-  'policier':  ['Procédural','True crime','Noir','Policier comique','Cold case','Gang','Détective privé'],
-  'historique':['Péplum','Moyen-Âge','WW2','Révolution','Époque victorienne','Antiquité','Renaissance'],
-  'animation': ['Anime','Animation 3D','Stop motion','Animation adulte','Anime shonen','Seinen','Famille'],
+  'sf':        [
+    {label:'Extra-terrestre', keyword:'9951'},
+    {label:'Dystopie',        keyword:'4565'},
+    {label:'Space Opera',     keyword:'4344'},
+    {label:'Post-apocalyptique', keyword:'3073'},
+    {label:'Cyberpunk',       keyword:'12190'},
+    {label:'Voyage dans le temps', keyword:'4379'},
+    {label:'Robots / IA',     keyword:'6152'},
+    {label:'Invasion',        keyword:'10364'},
+  ],
+  'action':    [
+    {label:'Arts martiaux',   keyword:'1701'},
+    {label:'Espionnage',      keyword:'10717'},
+    {label:'Guerre',          keyword:'9715'},
+    {label:'Super-héros',     keyword:'9715'},
+    {label:'Survie',          keyword:'4290'},
+    {label:'Catastrophe',     keyword:'3672'},
+    {label:'Braquage',        keyword:'10714'},
+    {label:'Assassin',        keyword:'14819'},
+  ],
+  'comedie':   [
+    {label:'Comédie romantique', keyword:'9840'},
+    {label:'Buddy movie',     keyword:'5565'},
+    {label:'Parodie',         keyword:'9327'},
+    {label:'Comédie noire',   keyword:'11444'},
+    {label:'Satire',          keyword:'7008'},
+    {label:'Coming-of-age',   keyword:'10683'},
+    {label:'Comédie musicale',keyword:'9816'},
+    {label:'Famille',         keyword:'9882'},
+  ],
+  'drame':     [
+    {label:'Judiciaire',      keyword:'9803'},
+    {label:'Psychologique',   keyword:'9663'},
+    {label:'Biopic',          keyword:'5565'},
+    {label:'Social',          keyword:'6092'},
+    {label:'Familial',        keyword:'9882'},
+    {label:'Sportif',         keyword:'6080'},
+    {label:'Médical',         keyword:'9882'},
+    {label:'Prison',          keyword:'8892'},
+  ],
+  'thriller':  [
+    {label:'Psychologique',   keyword:'9663'},
+    {label:'Whodunit',        keyword:'11041'},
+    {label:'Néo-noir',        keyword:'2964'},
+    {label:'Juridique',       keyword:'9803'},
+    {label:'Complot',         keyword:'3448'},
+    {label:'Serial killer',   keyword:'11861'},
+    {label:'Enlèvement',      keyword:'2614'},
+    {label:'Paranoïa',        keyword:'9663'},
+  ],
+  'horreur':   [
+    {label:'Slasher',         keyword:'11867'},
+    {label:'Found footage',   keyword:'12377'},
+    {label:'Paranormal',      keyword:'9951'},
+    {label:'Monstre',         keyword:'11196'},
+    {label:'Maison hantée',   keyword:'11882'},
+    {label:'Possession',      keyword:'6152'},
+    {label:'Zombie',          keyword:'12377'},
+    {label:'Gore',            keyword:'11867'},
+  ],
+  'romance':   [
+    {label:'Romance historique', keyword:'818'},
+    {label:'Romance fantastique', keyword:'9840'},
+    {label:'Amour impossible',keyword:'9840'},
+    {label:'Teen romance',    keyword:'10683'},
+    {label:'Comédie romantique', keyword:'9840'},
+    {label:'Mariage',         keyword:'9748'},
+    {label:'Rupture',         keyword:'9840'},
+  ],
+  'fantastique':[
+    {label:'Dark fantasy',    keyword:'10021'},
+    {label:'High fantasy',    keyword:'4344'},
+    {label:'Mythologie',      keyword:'9736'},
+    {label:'Contes',          keyword:'9339'},
+    {label:'Magie',           keyword:'9297'},
+    {label:'Dragons',         keyword:'2346'},
+    {label:'Vampires',        keyword:'6152'},
+    {label:'Sorcellerie',     keyword:'9297'},
+  ],
+  'policier':  [
+    {label:'Procédural',      keyword:'6236'},
+    {label:'True crime',      keyword:'11861'},
+    {label:'Détective',       keyword:'11041'},
+    {label:'Gangsters',       keyword:'6717'},
+    {label:'Cold case',       keyword:'11041'},
+    {label:'Enquête',         keyword:'11041'},
+    {label:'Maffia',          keyword:'6717'},
+    {label:'Corruption',      keyword:'3448'},
+  ],
+  'historique':[
+    {label:'Antiquité',       keyword:'818'},
+    {label:'Moyen-Âge',       keyword:'818'},
+    {label:'WW2',             keyword:'1438'},
+    {label:'WW1',             keyword:'11508'},
+    {label:'Révolution',      keyword:'818'},
+    {label:'Époque victorienne', keyword:'818'},
+    {label:'Péplum',          keyword:'818'},
+    {label:'Guerres napoléoniennes', keyword:'818'},
+  ],
+  'animation': [
+    {label:'Anime',           keyword:'210024'},
+    {label:'Animation 3D',    keyword:'9882'},
+    {label:'Stop motion',     keyword:'9882'},
+    {label:'Pour adultes',    keyword:'9882'},
+    {label:'Shonen',          keyword:'210024'},
+    {label:'Famille',         keyword:'9882'},
+    {label:'Fantaisie',       keyword:'9882'},
+    {label:'Science-fiction', keyword:'9882'},
+  ],
 };
+
+// Helper: get label list for a genre (backwards compat)
+function getSubgenreLabels(genre){
+  return (SUBGENRES[genre]||[]).map(s=>s.label);
+}
+// Helper: get keyword for a subgenre label
+function getSubgenreKeyword(genre, label){
+  return (SUBGENRES[genre]||[]).find(s=>s.label===label)?.keyword||null;
+}
 
 const MOVIES = [
   {id:1,title:'Inception',year:2010,type:'film',genre:['thriller','sf'],subgenre:['Dystopie','Voyage dans le temps'],decade:'2010s',mood:['intense','reflexif'],imdb:8.8,rt:87,lb:4.1,emoji:'🌀',desc:"Un voleur spécialisé dans l'extraction de secrets à travers les rêves se voit offrir une chance de rachat s'il réussit à implanter une idée dans l'esprit d'un PDG.",actors:['Leonardo DiCaprio','Joseph Gordon-Levitt','Elliot Page','Tom Hardy'],director:'Christopher Nolan',color:'#0d1a2e'},
@@ -735,6 +844,7 @@ async function loadByFilters(){
     const params = new URLSearchParams({
       language:'fr-FR', sort_by:'popularity.desc', page:'1',
       ...(genreIds && {with_genres: genreIds}),
+      ...(keywordIds && {with_keywords: keywordIds}),
       ...(decadeParam.from && {'primary_release_date.gte': decadeParam.from}),
       ...(decadeParam.to   && {'primary_release_date.lte': decadeParam.to}),
       ...(decadeParam.from && isTV && {'first_air_date.gte': decadeParam.from}),
@@ -831,13 +941,13 @@ function renderSubgenres(){
   const chips=document.getElementById('sgChips');
   const hdr=document.getElementById('sgHeader');
   const g=state.activeGenreForSub;
-  if(!g || !state.genres.includes(g) || !SUBGENRES[g]){
+  if(!g || !state.genres.includes(g) || !SUBGENRES[g]?.length){
     panel.classList.remove('open');
     return;
   }
   const label=GENRES.find(x=>x.val===g)?.label || g;
   hdr.textContent='Sous-genres — '+label.replace(/[🚀💥😂🎭🔪👻💕🧙🕵️⚔️✏️]\s*/,'');
-  chips.innerHTML=SUBGENRES[g].map(sg=>`
+  chips.innerHTML=getSubgenreLabels(g).map(sg=>`
     <div class="sg-chip${state.subgenres.includes(sg)?' on':''}" data-sg="${sg}">${sg}</div>
   `).join('');
   chips.querySelectorAll('.sg-chip').forEach(c=>{
